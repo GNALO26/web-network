@@ -7,21 +7,19 @@ const SocketContext = createContext();
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const serverUrl = apiUrl.replace('/api', '');
-      const newSocket = io(serverUrl, {
-        withCredentials: true,
-        transports: ['websocket', 'polling'],
+    if (!loading && user) {
+      const token = localStorage.getItem('token');
+      const newSocket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000', {
+        auth: { token }
       });
       setSocket(newSocket);
       return () => newSocket.close();
     }
-  }, [user]);
+  }, [user, loading]);
 
   return (
     <SocketContext.Provider value={socket}>

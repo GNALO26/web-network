@@ -7,6 +7,7 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <Link to="/">Accueil</Link>
+      <Link to="/conversations">Messages</Link>
       <Link to="/profile">Profil</Link>
       <span>Bienvenue, {user.name}</span>
       <button onClick={logout}>Déconnexion</button>

@@ -5,6 +5,8 @@ import Register from './pages/Register';
 import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
+import ConversationsList from './pages/ConversationsList';
+import Chat from './pages/Chat';
 import './App.css';
 
 function AppRoutes() {
@@ -18,6 +20,8 @@ function AppRoutes() {
         <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
         <Route path="/" element={user ? <Feed /> : <Navigate to="/login" />} />
         <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+        <Route path="/conversations" element={user ? <ConversationsList /> : <Navigate to="/login" />} />
+        <Route path="/messages/:conversationId" element={user ? <Chat /> : <Navigate to="/login" />} />
       </Routes>
     </>
   );
