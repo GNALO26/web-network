@@ -7,6 +7,7 @@ import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import ConversationsList from './pages/ConversationsList';
 import Chat from './pages/Chat';
+import Explore from './pages/Explore';
 import Navbar from './components/Navbar';
 import './App.css';
 
@@ -16,15 +17,18 @@ function AppRoutes() {
   return (
     <>
       {user && <Navbar />}
-      <Routes>
-        <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
-        <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
-        <Route path="/" element={user ? <Feed /> : <Navigate to="/login" />} />
-        <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
-        <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
-        <Route path="/conversations" element={user ? <ConversationsList /> : <Navigate to="/login" />} />
-        <Route path="/messages/:conversationId" element={user ? <Chat /> : <Navigate to="/login" />} />
-      </Routes>
+      <div className="main-content">
+        <Routes>
+          <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+          <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
+          <Route path="/" element={user ? <Feed /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+          <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
+          <Route path="/conversations" element={user ? <ConversationsList /> : <Navigate to="/login" />} />
+          <Route path="/messages/:conversationId" element={user ? <Chat /> : <Navigate to="/login" />} />
+          <Route path="/explore" element={user ? <Explore /> : <Navigate to="/login" />} />
+        </Routes>
+      </div>
     </>
   );
 }

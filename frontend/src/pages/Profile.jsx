@@ -7,49 +7,104 @@ const Profile = () => {
   const { id } = useParams();
   const { user: currentUser, setUser } = useAuth();
   const [profileUser, setProfileUser] = useState(null);
+  const [friends, setFriends] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      if (id && id !== currentUser._id) {
-        try {
+    const fetchData = async () => {
+      try {
+        let userData;
+        if (id && id !== currentUser._id) {
           const { data } = await api.get(`/users/${id}`);
-          setProfileUser(data);
-        } catch (error) {
-          console.error(error);
+          userData = data;
+        } else {
+          userData = currentUser;
         }
-      } else {
-        setProfileUser(currentUser);
+        setProfileUser(userData);
+
+        // Si c'est notre propre profil, récupérer la liste des amis
+        if (userData._id === currentUser._id) {
+          const { data } = await api.get('/invitations/friends');
+          setFriends(data);
+        }
+      } catch (error) {
+        console.error('Erreur chargement profil:', error);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchUser();
+    if (currentUser) fetchData();
   }, [id, currentUser]);
 
-  const startConversation = async () => {
+  const startConversation = async (userId) => {
     try {
-      const { data } = await api.post('/conversations', { otherUserId: profileUser._id });
+      const { data } = await api.post('/conversations', { otherUserId: userId });
       navigate(`/messages/${data._id}`);
     } catch (error) {
-      console.error(error);
+      console.error('Erreur création conversation:', error);
     }
   };
 
-  if (!profileUser) return <div>Chargement...</div>;
+  const sendInvitation = async (receiverId) => {
+    try {
+      await api.post('/invitations', { receiverId });
+      alert('Invitation envoyée !');
+    } catch (error) {
+      alert(error.response?.data?.message || 'Erreur lors de l’envoi');
+    }
+  };
+
+  if (loading) return <div className="loading">Chargement...</div>;
+  if (!profileUser) return <div className="error">Utilisateur non trouvé</div>;
 
   const isOwnProfile = profileUser._id === currentUser._id;
 
   return (
     <div className="profile-container">
-      <h2>{isOwnProfile ? 'Mon profil' : `Profil de ${profileUser.name}`}</h2>
-      <div className="profile-info">
-        <img src={profileUser.avatar} alt={profileUser.name} style={{ width: '100px', borderRadius: '50%' }} />
-        <p><strong>Nom :</strong> {profileUser.name}</p>
-        <p><strong>Email :</strong> {profileUser.email}</p>
-        <p><strong>Bio :</strong> {profileUser.bio || 'Aucune bio'}</p>
-        {!isOwnProfile && (
-          <button onClick={startConversation}>Envoyer un message</button>
-        )}
+      <div className="profile-header">
+        <img
+          src={profileUser.avatar || '/default-avatar.png'}
+          alt={profileUser.name}
+          className="profile-avatar"
+        />
+        <h2>{profileUser.name}</h2>
+        <p className="profile-email">{profileUser.email}</p>
+        <p className="profile-bio">{profileUser.bio || 'Aucune bio pour le moment'}</p>
       </div>
+
+      {!isOwnProfile && (
+        <div className="profile-actions">
+          <button onClick={() => startConversation(profileUser._id)} className="btn-message">
+            💬 Envoyer un message
+          </button>
+          <button onClick={() => sendInvitation(profileUser._id)} className="btn-invite">
+            🤝 Inviter en ami
+          </button>
+        </div>
+      )}
+
+      {isOwnProfile && (
+        <div className="friends-section">
+          <h3>Mes amis ({friends.length})</h3>
+          {friends.length === 0 ? (
+            <p>Vous n'avez pas encore d'amis. Explorez et invitez d'autres utilisateurs !</p>
+          ) : (
+            <div className="friends-grid">
+              {friends.map((friend) => (
+                <div key={friend._id} className="friend-card">
+                  <img src={friend.avatar || '/default-avatar.png'} alt={friend.name} />
+                  <div>
+                    <strong>{friend.name}</strong>
+                    <button onClick={() => navigate(`/profile/${friend._id}`)}>Voir profil</button>
+                    <button onClick={() => startConversation(friend._id)}>Message</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

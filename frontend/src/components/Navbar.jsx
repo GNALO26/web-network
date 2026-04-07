@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 import api from '../services/api';
+import InvitationNotifications from './InvitationNotifications';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -30,21 +31,17 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-left">
         <Link to="/">Accueil</Link>
+        <Link to="/explore">Explorer</Link>
         <Link to="/conversations">Messages</Link>
         <Link to="/profile">Mon profil</Link>
       </div>
       <div className="navbar-search">
-        <input
-          type="text"
-          placeholder="Rechercher un utilisateur..."
-          value={searchTerm}
-          onChange={handleSearch}
-        />
+        <input type="text" placeholder="Rechercher un utilisateur..." value={searchTerm} onChange={handleSearch} />
         {showResults && (
           <div className="search-results">
-            {users.length > 0 ? users.map(u => (
+            {users.length ? users.map(u => (
               <Link key={u._id} to={`/profile/${u._id}`} onClick={() => setShowResults(false)}>
-                <img src={u.avatar || '/default-avatar.png'} alt={u.name} width="30" style={{ borderRadius: '50%' }} />
+                <img src={u.avatar || '/default-avatar.png'} alt={u.name} />
                 {u.name}
               </Link>
             )) : <div>Aucun résultat</div>}
@@ -52,7 +49,8 @@ const Navbar = () => {
         )}
       </div>
       <div className="navbar-right">
-        <span>Bienvenue, {user?.name}</span>
+        <InvitationNotifications />
+        <span>{user?.name}</span>
         <button onClick={logout}>Déconnexion</button>
       </div>
     </nav>
