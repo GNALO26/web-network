@@ -1,51 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 const Profile = () => {
-  const { user, setUser } = useAuth(); // il faut que setUser soit exposé par le contexte
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const { id } = useParams();
+  const { user: currentUser, setUser } = useAuth();
+  const [profileUser, setProfileUser] = useState(null);
+  const navigate = useNavigate();
 
-  const handleFileChange = (e) => {
-    setAvatarFile(e.target.files[0]);
-  };
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (id && id !== currentUser._id) {
+        try {
+          const { data } = await api.get(`/users/${id}`);
+          setProfileUser(data);
+        } catch (error) {
+          console.error(error);
+        }
+      } else {
+        setProfileUser(currentUser);
+      }
+    };
+    fetchUser();
+  }, [id, currentUser]);
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!avatarFile) return;
-    const formData = new FormData();
-    formData.append('avatar', avatarFile);
-    setUploading(true);
+  const startConversation = async () => {
     try {
-      const { data } = await api.put('/users/avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      // Mettre à jour l'utilisateur dans le contexte
-      setUser({ ...user, avatar: data.avatar });
-      setAvatarFile(null);
+      const { data } = await api.post('/conversations', { otherUserId: profileUser._id });
+      navigate(`/messages/${data._id}`);
     } catch (error) {
-      console.error('Erreur upload', error);
-    } finally {
-      setUploading(false);
+      console.error(error);
     }
   };
 
+  if (!profileUser) return <div>Chargement...</div>;
+
+  const isOwnProfile = profileUser._id === currentUser._id;
+
   return (
     <div className="profile-container">
-      <h2>Profil</h2>
+      <h2>{isOwnProfile ? 'Mon profil' : `Profil de ${profileUser.name}`}</h2>
       <div className="profile-info">
-        <img src={user.avatar} alt={user.name} style={{ width: '100px', height: '100px', borderRadius: '50%' }} />
-        <p><strong>Nom :</strong> {user.name}</p>
-        <p><strong>Email :</strong> {user.email}</p>
-        <p><strong>Bio :</strong> {user.bio || 'Aucune bio'}</p>
-        
-        <form onSubmit={handleUpload}>
-          <input type="file" accept="image/*" onChange={handleFileChange} />
-          <button type="submit" disabled={!avatarFile || uploading}>
-            {uploading ? 'Upload...' : 'Changer la photo'}
-          </button>
-        </form>
+        <img src={profileUser.avatar} alt={profileUser.name} style={{ width: '100px', borderRadius: '50%' }} />
+        <p><strong>Nom :</strong> {profileUser.name}</p>
+        <p><strong>Email :</strong> {profileUser.email}</p>
+        <p><strong>Bio :</strong> {profileUser.bio || 'Aucune bio'}</p>
+        {!isOwnProfile && (
+          <button onClick={startConversation}>Envoyer un message</button>
+        )}
       </div>
     </div>
   );
