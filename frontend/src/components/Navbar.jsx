@@ -44,7 +44,7 @@ const Navbar = () => {
           <div className="search-results">
             {users.length > 0 ? users.map(u => (
               <Link key={u._id} to={`/profile/${u._id}`} onClick={() => setShowResults(false)}>
-                <img src={u.avatar} alt={u.name} width="30" style={{ borderRadius: '50%' }} />
+                <img src={u.avatar || '/default-avatar.png'} alt={u.name} width="30" style={{ borderRadius: '50%' }} />
                 {u.name}
               </Link>
             )) : <div>Aucun résultat</div>}
@@ -52,7 +52,7 @@ const Navbar = () => {
         )}
       </div>
       <div className="navbar-right">
-        <span>Bienvenue, {user.name}</span>
+        <span>Bienvenue, {user?.name}</span>
         <button onClick={logout}>Déconnexion</button>
       </div>
     </nav>

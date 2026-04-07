@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { formatDate } from '../utils/dateFormatter';
+import { useAuth } from '../context/AuthContext';
 
 const CommentSection = ({ postId }) => {
+  const { user } = useAuth();
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
 
@@ -45,9 +47,9 @@ const CommentSection = ({ postId }) => {
       <div className="comments">
         {comments.map((comment) => (
           <div key={comment._id} className="comment">
-            <img src={`/avatars/${comment.author.avatar}`} alt={comment.author.name} />
+            <img src={comment.author?.avatar || '/default-avatar.png'} alt={comment.author?.name} />
             <div>
-              <strong>{comment.author.name}</strong>
+              <strong>{comment.author?.name || 'Inconnu'}</strong>
               <p>{comment.content}</p>
               <small>{formatDate(comment.createdAt)}</small>
             </div>
