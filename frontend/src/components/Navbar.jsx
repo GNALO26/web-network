@@ -18,7 +18,7 @@ const Navbar = () => {
       try {
         const { data } = await api.get("/users");
         const filtered = data.filter((u) =>
-          u.name.toLowerCase().includes(value.toLowerCase()),
+          u.name.toLowerCase().includes(value.toLowerCase())
         );
         setUsers(filtered);
         setShowResults(true);
@@ -38,6 +38,7 @@ const Navbar = () => {
         <Link to="/conversations">Messages</Link>
         <Link to="/profile">Mon profil</Link>
       </div>
+
       <div className="navbar-search">
         <input
           type="text"
@@ -64,14 +65,11 @@ const Navbar = () => {
           </div>
         )}
       </div>
+
       <div className="navbar-right">
         <InvitationNotifications />
-        <div className="navbar-right">
-          <Notifications />
-          <span>Bienvenue, {user?.name}</span>
-          <button onClick={logout}>Déconnexion</button>
-        </div>
-        <span>{user?.name}</span>
+        <Notifications />
+        <span>Bienvenue, {user?.name}</span>
         <button onClick={logout}>Déconnexion</button>
       </div>
     </nav>

@@ -14,40 +14,33 @@ const Chat = () => {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    const fetchConversationAndMessages = async () => {
+    const fetchData = async () => {
       try {
-        // Récupérer la conversation
-        const convRes = await api.get(`/conversations`);
+        const [convRes, msgRes] = await Promise.all([
+          api.get('/conversations'),
+          api.get(`/messages/${conversationId}`)
+        ]);
         const found = convRes.data.find(c => c._id === conversationId);
         setConversation(found);
-        
-        // Récupérer les messages
-        const msgRes = await api.get(`/messages/${conversationId}`);
         setMessages(msgRes.data);
-        
-        // Marquer comme lus
         await api.put(`/messages/${conversationId}/read`);
       } catch (error) {
         console.error(error);
       }
     };
-    fetchConversationAndMessages();
+    fetchData();
 
-    // Rejoindre la room Socket.io
     if (socket) {
       socket.emit('joinConversation', conversationId);
       socket.on('newMessage', (msg) => {
         if (msg.conversation === conversationId) {
           setMessages(prev => [...prev, msg]);
-          // Marquer comme lu si l'autre envoie
           if (msg.sender._id !== user._id) {
             api.put(`/messages/${conversationId}/read`);
           }
         }
       });
-      return () => {
-        socket.off('newMessage');
-      };
+      return () => socket.off('newMessage');
     }
   }, [conversationId, socket]);
 
@@ -60,14 +53,9 @@ const Chat = () => {
     if (!newMessage.trim()) return;
     try {
       if (socket) {
-        socket.emit('sendMessage', {
-          conversationId,
-          text: newMessage,
-          receiverId: conversation.participants.find(p => p._id !== user._id)._id
-        });
+        socket.emit('sendMessage', { conversationId, text: newMessage });
         setNewMessage('');
       } else {
-        // Fallback REST
         const { data } = await api.post('/messages', { conversationId, text: newMessage });
         setMessages(prev => [...prev, data]);
         setNewMessage('');
@@ -84,7 +72,7 @@ const Chat = () => {
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <img src={otherUser.avatar} alt={otherUser.name} />
+        <img src={otherUser.avatar || '/default-avatar.png'} alt={otherUser.name} />
         <h3>{otherUser.name}</h3>
       </div>
       <div className="messages-list">

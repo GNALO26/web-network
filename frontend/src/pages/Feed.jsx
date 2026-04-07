@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 const Feed = () => {
   const [posts, setPosts] = useState([]);
   const [newPost, setNewPost] = useState('');
+  const [mediaFile, setMediaFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -23,13 +25,22 @@ const Feed = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newPost.trim()) return;
+    if (!newPost.trim() && !mediaFile) return;
+    const formData = new FormData();
+    formData.append('content', newPost);
+    if (mediaFile) formData.append('media', mediaFile);
+    setUploading(true);
     try {
-      const { data } = await api.post('/posts', { content: newPost });
+      const { data } = await api.post('/posts', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       setPosts([data, ...posts]);
       setNewPost('');
+      setMediaFile(null);
     } catch (error) {
-      console.error('Erreur création post', error);
+      console.error(error);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -43,7 +54,11 @@ const Feed = () => {
           onChange={(e) => setNewPost(e.target.value)}
           rows="3"
         />
-        <button type="submit">Publier</button>
+        <div className="media-input">
+          <input type="file" accept="image/*,video/*" onChange={(e) => setMediaFile(e.target.files[0])} />
+          {mediaFile && <span>{mediaFile.name}</span>}
+        </div>
+        <button type="submit" disabled={uploading}>{uploading ? 'Publication...' : 'Publier'}</button>
       </form>
       <div className="posts">
         {posts.map((post) => (

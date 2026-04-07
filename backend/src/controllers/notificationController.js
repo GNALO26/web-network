@@ -23,10 +23,4 @@ const markAsRead = async (req, res) => {
   }
 };
 
-const createNotification = async (recipientId, senderId, type, referenceId) => {
-  const notification = new Notification({ recipient: recipientId, sender: senderId, type, referenceId });
-  await notification.save();
-  return notification.populate('sender', 'name avatar');
-};
-
-module.exports = { getNotifications, markAsRead, createNotification };
+module.exports = { getNotifications, markAsRead };

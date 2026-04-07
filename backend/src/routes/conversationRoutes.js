@@ -3,7 +3,6 @@ const { getConversations, createOrGetConversation } = require('../controllers/co
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
-
 router.route('/')
   .get(protect, getConversations)
   .post(protect, createOrGetConversation);

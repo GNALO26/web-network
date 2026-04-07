@@ -9,6 +9,8 @@ const Profile = () => {
   const [profileUser, setProfileUser] = useState(null);
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,14 +24,12 @@ const Profile = () => {
           userData = currentUser;
         }
         setProfileUser(userData);
-
-        // Si c'est notre propre profil, récupérer la liste des amis
         if (userData._id === currentUser._id) {
           const { data } = await api.get('/invitations/friends');
           setFriends(data);
         }
       } catch (error) {
-        console.error('Erreur chargement profil:', error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -42,7 +42,7 @@ const Profile = () => {
       const { data } = await api.post('/conversations', { otherUserId: userId });
       navigate(`/messages/${data._id}`);
     } catch (error) {
-      console.error('Erreur création conversation:', error);
+      console.error(error);
     }
   };
 
@@ -51,7 +51,28 @@ const Profile = () => {
       await api.post('/invitations', { receiverId });
       alert('Invitation envoyée !');
     } catch (error) {
-      alert(error.response?.data?.message || 'Erreur lors de l’envoi');
+      alert(error.response?.data?.message || 'Erreur');
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    e.preventDefault();
+    if (!avatarFile) return;
+    const formData = new FormData();
+    formData.append('avatar', avatarFile);
+    setUploading(true);
+    try {
+      const { data } = await api.put('/users/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setUser({ ...currentUser, avatar: data.avatar });
+      setProfileUser({ ...profileUser, avatar: data.avatar });
+      alert('Avatar mis à jour');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setUploading(false);
+      setAvatarFile(null);
     }
   };
 
@@ -63,46 +84,40 @@ const Profile = () => {
   return (
     <div className="profile-container">
       <div className="profile-header">
-        <img
-          src={profileUser.avatar || '/default-avatar.png'}
-          alt={profileUser.name}
-          className="profile-avatar"
-        />
+        <img src={profileUser.avatar || '/default-avatar.png'} alt={profileUser.name} className="profile-avatar" />
         <h2>{profileUser.name}</h2>
         <p className="profile-email">{profileUser.email}</p>
-        <p className="profile-bio">{profileUser.bio || 'Aucune bio pour le moment'}</p>
+        <p className="profile-bio">{profileUser.bio || 'Aucune bio'}</p>
+        {isOwnProfile && (
+          <form onSubmit={handleAvatarUpload} className="avatar-upload">
+            <input type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files[0])} />
+            <button type="submit" disabled={uploading}>Changer l'avatar</button>
+          </form>
+        )}
       </div>
 
       {!isOwnProfile && (
         <div className="profile-actions">
-          <button onClick={() => startConversation(profileUser._id)} className="btn-message">
-            💬 Envoyer un message
-          </button>
-          <button onClick={() => sendInvitation(profileUser._id)} className="btn-invite">
-            🤝 Inviter en ami
-          </button>
+          <button onClick={() => startConversation(profileUser._id)} className="btn-message">💬 Message</button>
+          <button onClick={() => sendInvitation(profileUser._id)} className="btn-invite">🤝 Inviter</button>
         </div>
       )}
 
       {isOwnProfile && (
         <div className="friends-section">
           <h3>Mes amis ({friends.length})</h3>
-          {friends.length === 0 ? (
-            <p>Vous n'avez pas encore d'amis. Explorez et invitez d'autres utilisateurs !</p>
-          ) : (
-            <div className="friends-grid">
-              {friends.map((friend) => (
-                <div key={friend._id} className="friend-card">
-                  <img src={friend.avatar || '/default-avatar.png'} alt={friend.name} />
-                  <div>
-                    <strong>{friend.name}</strong>
-                    <button onClick={() => navigate(`/profile/${friend._id}`)}>Voir profil</button>
-                    <button onClick={() => startConversation(friend._id)}>Message</button>
-                  </div>
+          <div className="friends-grid">
+            {friends.map(friend => (
+              <div key={friend._id} className="friend-card">
+                <img src={friend.avatar || '/default-avatar.png'} alt={friend.name} />
+                <div>
+                  <strong>{friend.name}</strong>
+                  <button onClick={() => navigate(`/profile/${friend._id}`)}>Voir profil</button>
+                  <button onClick={() => startConversation(friend._id)}>Message</button>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

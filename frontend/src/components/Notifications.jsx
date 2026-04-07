@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useSocket } from '../context/SocketContext';
-import { useAuth } from '../context/AuthContext';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [show, setShow] = useState(false);
   const socket = useSocket();
-  const { user } = useAuth();
 
   useEffect(() => {
-    const fetchNotifications = async () => {
+    const fetchNotifs = async () => {
       try {
         const { data } = await api.get('/notifications');
         setNotifications(data);
@@ -18,12 +16,10 @@ const Notifications = () => {
         console.error(error);
       }
     };
-    fetchNotifications();
+    fetchNotifs();
 
     if (socket) {
-      socket.on('notification', (newNotif) => {
-        setNotifications(prev => [newNotif, ...prev]);
-      });
+      socket.on('notification', () => fetchNotifs());
       return () => socket.off('notification');
     }
   }, [socket]);

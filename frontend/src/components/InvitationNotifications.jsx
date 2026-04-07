@@ -3,6 +3,7 @@ import api from '../services/api';
 
 const InvitationNotifications = () => {
   const [pending, setPending] = useState([]);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
     const fetchPending = async () => {
@@ -40,18 +41,20 @@ const InvitationNotifications = () => {
 
   return (
     <div className="invitation-notifications">
-      <span className="notification-bell">🔔</span>
-      <div className="notification-dropdown">
-        <h4>Demandes d'amis</h4>
-        {pending.map(inv => (
-          <div key={inv._id} className="invitation-item">
-            <img src={inv.sender.avatar} alt={inv.sender.name} />
-            <span>{inv.sender.name}</span>
-            <button onClick={() => accept(inv._id)}>Accepter</button>
-            <button onClick={() => decline(inv._id)}>Refuser</button>
-          </div>
-        ))}
-      </div>
+      <button className="notification-bell" onClick={() => setShow(!show)}>🔔 {pending.length}</button>
+      {show && (
+        <div className="notification-dropdown">
+          <h4>Demandes d'amis</h4>
+          {pending.map(inv => (
+            <div key={inv._id} className="invitation-item">
+              <img src={inv.sender.avatar || '/default-avatar.png'} alt={inv.sender.name} />
+              <span>{inv.sender.name}</span>
+              <button onClick={() => accept(inv._id)}>Accepter</button>
+              <button onClick={() => decline(inv._id)}>Refuser</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

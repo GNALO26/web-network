@@ -21,9 +21,5 @@ export const SocketProvider = ({ children }) => {
     }
   }, [user, loading]);
 
-  return (
-    <SocketContext.Provider value={socket}>
-      {children}
-    </SocketContext.Provider>
-  );
+  return <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>;
 };
