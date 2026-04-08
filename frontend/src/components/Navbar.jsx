@@ -69,7 +69,7 @@ const Navbar = () => {
       <div className="navbar-right">
         <InvitationNotifications />
         <Notifications />
-        <span>Bienvenue, {user?.name}</span>
+        <span>{user?.name}</span>
         <button onClick={logout}>Déconnexion</button>
       </div>
     </nav>
