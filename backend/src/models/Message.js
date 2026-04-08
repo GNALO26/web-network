@@ -5,7 +5,7 @@ const messageSchema = new mongoose.Schema({
   sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   text: { type: String, default: '' },
   fileUrl: { type: String, default: null },
-  fileType: { type: String, default: null }, // plus d’enum – on accepte null, 'image', 'video', 'document'
+  fileType: { type: String, default: null }, // null pour texte, 'image', 'video', 'document', 'audio'
   read: { type: Boolean, default: false }
 }, { timestamps: true });
 

@@ -1,4 +1,5 @@
 const VoiceMessage = require('../models/VoiceMessage');
+const Notification = require('../models/Notification');
 
 const sendVoiceMessage = async (req, res) => {
   try {
@@ -9,11 +10,15 @@ const sendVoiceMessage = async (req, res) => {
       audioUrl,
       duration
     });
-    // Notification en temps réel (Socket.io)
+    // Notification en temps réel
     const io = req.app.get('io');
-    if (io) io.to(receiverId).emit('new-voice-message', voiceMessage);
+    if (io) {
+      io.to(receiverId).emit('new-voice-message', { messageId: voiceMessage._id });
+      io.to(receiverId).emit('notification', { type: 'voice-message' });
+    }
     res.status(201).json(voiceMessage);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };

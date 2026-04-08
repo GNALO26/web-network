@@ -131,7 +131,7 @@ const Chat = () => {
             disabled={sending}
           />
           <VoiceRecorder receiverId={otherUser?._id} onSent={() => {}} />
-          <button type="submit" disabled={sending}>
+          <button type="submit" disabled={sending} title="Envoyer le message">
             <i className="fas fa-paper-plane"></i>
           </button>
         </form>

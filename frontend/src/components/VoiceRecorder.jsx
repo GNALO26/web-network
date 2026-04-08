@@ -23,12 +23,12 @@ const VoiceRecorder = ({ receiverId, onSent }) => {
           const formData = new FormData();
           formData.append('file', blob, 'voice.webm');
           const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-          const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+          const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
             method: 'POST',
             body: formData
           });
-          const data = await res.json();
-          await api.post('/voice-messages', { receiverId, audioUrl: data.secure_url, duration: recordingTime });
+          const uploadData = await uploadRes.json();
+          await api.post('/voice-messages', { receiverId, audioUrl: uploadData.secure_url, duration: recordingTime });
           if (onSent) onSent();
           stream.getTracks().forEach(track => track.stop());
         };
@@ -82,6 +82,7 @@ const VoiceRecorder = ({ receiverId, onSent }) => {
     <div className="voice-recorder-container">
       <button
         className={`voice-record-btn ${isRecording ? 'recording' : ''}`}
+        title="Message vocal (maintenir)"
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
@@ -89,7 +90,7 @@ const VoiceRecorder = ({ receiverId, onSent }) => {
         onTouchEnd={handleMouseUp}
         onTouchCancel={handleMouseLeave}
       >
-        <i className="fas fa-microphone"></i>
+        <i className={`fas ${isRecording ? 'fa-stop' : 'fa-microphone'}`}></i>
         {isRecording && <span className="recording-time">{recordingTime}s</span>}
       </button>
     </div>
