@@ -13,9 +13,13 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (!loading && user) {
       const token = localStorage.getItem('token');
-      const newSocket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000', {
-        auth: { token }
+      const socketUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+      const newSocket = io(socketUrl, {
+        auth: { token },
+        transports: ['websocket', 'polling']
       });
+      newSocket.on('connect', () => console.log('Socket connecté'));
+      newSocket.on('connect_error', (err) => console.error('Socket error:', err));
       setSocket(newSocket);
       return () => newSocket.close();
     }

@@ -9,15 +9,18 @@ const sendInvitation = async (req, res) => {
     if (senderId.toString() === receiverId) return res.status(400).json({ message: 'Vous ne pouvez pas vous inviter vous-même' });
     const receiver = await User.findById(receiverId);
     if (!receiver) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    // Vérifier si une invitation existe déjà (pending ou accepted)
     const existing = await Invitation.findOne({
-      $or: [{ sender: senderId, receiver: receiverId }, { sender: receiverId, receiver: senderId }]
+      $or: [
+        { sender: senderId, receiver: receiverId },
+        { sender: receiverId, receiver: senderId }
+      ]
     });
     if (existing) {
-      if (existing.status === 'pending') return res.status(400).json({ message: 'Invitation déjà envoyée' });
+      if (existing.status === 'pending') return res.status(400).json({ message: 'Invitation déjà envoyée en attente' });
       if (existing.status === 'accepted') return res.status(400).json({ message: 'Vous êtes déjà amis' });
     }
     const invitation = await Invitation.create({ sender: senderId, receiver: receiverId });
-    // Notification
     await Notification.create({
       recipient: receiverId,
       sender: senderId,
@@ -25,9 +28,10 @@ const sendInvitation = async (req, res) => {
       referenceId: invitation._id
     });
     const io = req.app.get('io');
-    if (io) io.to(receiverId.toString()).emit('notification', {});
+    if (io) io.to(receiverId.toString()).emit('notification', { type: 'invitation' });
     res.status(201).json(invitation);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
@@ -73,7 +77,10 @@ const getPendingInvitations = async (req, res) => {
 const getFriends = async (req, res) => {
   try {
     const invitations = await Invitation.find({
-      $or: [{ sender: req.user._id, status: 'accepted' }, { receiver: req.user._id, status: 'accepted' }]
+      $or: [
+        { sender: req.user._id, status: 'accepted' },
+        { receiver: req.user._id, status: 'accepted' }
+      ]
     }).populate('sender receiver', 'name avatar email');
     const friends = invitations.map(inv =>
       inv.sender._id.toString() === req.user._id.toString() ? inv.receiver : inv.sender

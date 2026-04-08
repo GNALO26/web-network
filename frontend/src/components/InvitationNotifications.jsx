@@ -1,26 +1,35 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { useSocket } from '../context/SocketContext';
 
 const InvitationNotifications = () => {
   const [pending, setPending] = useState([]);
   const [show, setShow] = useState(false);
+  const socket = useSocket();
+
+  const fetchPending = async () => {
+    try {
+      const { data } = await api.get('/invitations/pending');
+      setPending(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
-    const fetchPending = async () => {
-      try {
-        const { data } = await api.get('/invitations/pending');
-        setPending(data);
-      } catch (error) {
-        console.error(error);
-      }
-    };
     fetchPending();
-  }, []);
+    if (socket) {
+      socket.on('notification', (data) => {
+        if (data.type === 'invitation') fetchPending();
+      });
+      return () => socket.off('notification');
+    }
+  }, [socket]);
 
   const accept = async (invitationId) => {
     try {
       await api.put(`/invitations/${invitationId}/accept`);
-      setPending(pending.filter(inv => inv._id !== invitationId));
+      fetchPending();
       alert('Invitation acceptée');
     } catch (error) {
       console.error(error);
@@ -30,7 +39,7 @@ const InvitationNotifications = () => {
   const decline = async (invitationId) => {
     try {
       await api.put(`/invitations/${invitationId}/decline`);
-      setPending(pending.filter(inv => inv._id !== invitationId));
+      fetchPending();
       alert('Invitation refusée');
     } catch (error) {
       console.error(error);
@@ -41,7 +50,9 @@ const InvitationNotifications = () => {
 
   return (
     <div className="invitation-notifications">
-      <button className="notification-bell" onClick={() => setShow(!show)}>🔔 {pending.length}</button>
+      <button className="notification-bell" onClick={() => setShow(!show)}>
+        🤝 {pending.length}
+      </button>
       {show && (
         <div className="notification-dropdown">
           <h4>Demandes d'amis</h4>

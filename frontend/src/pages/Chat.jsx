@@ -61,7 +61,7 @@ const Chat = () => {
         setNewMessage('');
       }
     } catch (error) {
-      console.error(error);
+      console.error('Erreur envoi message:', error);
     }
   };
 
@@ -72,7 +72,7 @@ const Chat = () => {
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <img src={otherUser.avatar || '/default-avatar.png'} alt={otherUser.name} />
+        <img src={otherUser.avatar || '/default-avatar.png'} alt={otherUser.name} className="chat-avatar" />
         <h3>{otherUser.name}</h3>
       </div>
       <div className="messages-list">

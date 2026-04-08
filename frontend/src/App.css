@@ -95,6 +95,7 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 50%;
+  object-fit: cover;
 }
 
 /* Feed */
@@ -118,6 +119,14 @@ body {
   border: 1px solid #ddd;
   border-radius: 8px;
   resize: vertical;
+  font-family: inherit;
+}
+
+.media-input {
+  margin: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .post-card {
@@ -144,8 +153,10 @@ body {
 
 .post-media {
   max-width: 100%;
+  max-height: 400px;
   border-radius: 8px;
   margin-top: 0.8rem;
+  object-fit: contain;
 }
 
 .post-actions {
@@ -183,6 +194,14 @@ body {
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--primary);
+  margin-bottom: 1rem;
+}
+
+.avatar-upload {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .friends-grid {
@@ -201,7 +220,20 @@ body {
   border-radius: 8px;
 }
 
+.friend-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 /* Explore */
+.explore-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
 .users-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -222,6 +254,7 @@ body {
   height: 80px;
   border-radius: 50%;
   object-fit: cover;
+  margin-bottom: 0.5rem;
 }
 
 .user-actions {
@@ -265,6 +298,13 @@ body {
   gap: 1rem;
 }
 
+.chat-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .messages-list {
   flex: 1;
   overflow-y: auto;
@@ -279,6 +319,7 @@ body {
   padding: 0.5rem 1rem;
   border-radius: 18px;
   font-size: 0.9rem;
+  word-wrap: break-word;
 }
 
 .message.own {
@@ -290,6 +331,12 @@ body {
 .message.other {
   align-self: flex-start;
   background: #e4e6eb;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-top: 0.2rem;
 }
 
 .message-form {
@@ -317,6 +364,7 @@ body {
   font-size: 1.2rem;
   cursor: pointer;
   position: relative;
+  color: white;
 }
 
 .badge {
@@ -330,7 +378,7 @@ body {
   font-size: 0.7rem;
 }
 
-.notifications-dropdown {
+.notifications-dropdown, .notification-dropdown {
   position: absolute;
   top: 100%;
   right: 0;
@@ -341,9 +389,10 @@ body {
   z-index: 1000;
   max-height: 400px;
   overflow-y: auto;
+  color: #333;
 }
 
-.notification-item {
+.notification-item, .invitation-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -353,6 +402,13 @@ body {
 
 .notification-item.unread {
   background: #e3f2fd;
+}
+
+.notification-item img, .invitation-item img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 /* Responsive */
@@ -368,7 +424,7 @@ body {
   .navbar-search {
     width: 100%;
   }
-  .feed-container, .profile-container, .chat-container {
+  .feed-container, .profile-container, .chat-container, .explore-container {
     margin: 1rem;
   }
   .message {

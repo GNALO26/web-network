@@ -38,7 +38,8 @@ const Feed = () => {
       setNewPost('');
       setMediaFile(null);
     } catch (error) {
-      console.error(error);
+      console.error('Erreur publication:', error);
+      alert('Erreur lors de la publication');
     } finally {
       setUploading(false);
     }
@@ -61,7 +62,7 @@ const Feed = () => {
         <button type="submit" disabled={uploading}>{uploading ? 'Publication...' : 'Publier'}</button>
       </form>
       <div className="posts">
-        {posts.map((post) => (
+        {posts.map(post => (
           <PostCard key={post._id} post={post} onUpdate={fetchPosts} />
         ))}
       </div>

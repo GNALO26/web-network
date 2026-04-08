@@ -7,19 +7,19 @@ const Notifications = () => {
   const [show, setShow] = useState(false);
   const socket = useSocket();
 
-  useEffect(() => {
-    const fetchNotifs = async () => {
-      try {
-        const { data } = await api.get('/notifications');
-        setNotifications(data);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchNotifs();
+  const fetchNotifs = async () => {
+    try {
+      const { data } = await api.get('/notifications');
+      setNotifications(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
+  useEffect(() => {
+    fetchNotifs();
     if (socket) {
-      socket.on('notification', () => fetchNotifs());
+      socket.on('notification', fetchNotifs);
       return () => socket.off('notification');
     }
   }, [socket]);
@@ -45,7 +45,7 @@ const Notifications = () => {
       {show && (
         <div className="notifications-dropdown">
           {notifications.length === 0 ? (
-            <div>Aucune notification</div>
+            <div className="no-notif">Aucune notification</div>
           ) : (
             notifications.map(notif => (
               <div key={notif._id} className={`notification-item ${!notif.read ? 'unread' : ''}`}>

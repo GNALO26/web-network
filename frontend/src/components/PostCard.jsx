@@ -30,7 +30,7 @@ const PostCard = ({ post, onUpdate }) => {
           <span>{formatDate(post.createdAt)}</span>
         </div>
       </div>
-      <p className="post-content">{post.content}</p>
+      {post.content && <p className="post-content">{post.content}</p>}
       {post.mediaUrl && (
         post.mediaType === 'video' ? (
           <video src={post.mediaUrl} controls className="post-media" />
@@ -39,7 +39,7 @@ const PostCard = ({ post, onUpdate }) => {
         )
       )}
       <div className="post-actions">
-        <button onClick={handleLike}>
+        <button onClick={handleLike} className={liked ? 'liked' : ''}>
           {liked ? '❤️' : '🤍'} {likesCount}
         </button>
         <button onClick={() => setShowComments(!showComments)}>

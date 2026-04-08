@@ -13,10 +13,12 @@ const getNotifications = async (req, res) => {
 
 const markAsRead = async (req, res) => {
   try {
-    await Notification.updateMany(
-      { recipient: req.user._id, _id: { $in: req.body.ids } },
-      { read: true }
-    );
+    const { ids } = req.body;
+    if (ids && ids.length > 0) {
+      await Notification.updateMany({ _id: { $in: ids }, recipient: req.user._id }, { read: true });
+    } else {
+      await Notification.updateMany({ recipient: req.user._id, read: false }, { read: true });
+    }
     res.json({ message: 'Notifications marquées comme lues' });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur' });

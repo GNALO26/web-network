@@ -11,7 +11,7 @@ const createPost = async (req, res) => {
       mediaType = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
     }
     const post = await Post.create({
-      content,
+      content: content || '',
       mediaUrl,
       mediaType,
       author: req.user._id
@@ -19,7 +19,8 @@ const createPost = async (req, res) => {
     const populatedPost = await post.populate('author', 'name avatar');
     res.status(201).json(populatedPost);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Erreur createPost:', error);
+    res.status(500).json({ message: 'Erreur serveur lors de la création du post' });
   }
 };
 
@@ -34,6 +35,7 @@ const getPosts = async (req, res) => {
     }));
     res.json(postsWithCount);
   } catch (error) {
+    console.error('Erreur getPosts:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
@@ -47,7 +49,6 @@ const likePost = async (req, res) => {
       post.likes = post.likes.filter(id => id.toString() !== req.user._id.toString());
     } else {
       post.likes.push(req.user._id);
-      // Créer notification pour l'auteur du post
       if (post.author.toString() !== req.user._id.toString()) {
         await Notification.create({
           recipient: post.author,
@@ -56,12 +57,13 @@ const likePost = async (req, res) => {
           referenceId: post._id
         });
         const io = req.app.get('io');
-        if (io) io.to(post.author.toString()).emit('notification', {});
+        if (io) io.to(post.author.toString()).emit('notification', { type: 'like' });
       }
     }
     await post.save();
     res.json(post);
   } catch (error) {
+    console.error('Erreur likePost:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };

@@ -49,7 +49,7 @@ const Profile = () => {
   const sendInvitation = async (receiverId) => {
     try {
       await api.post('/invitations', { receiverId });
-      alert('Invitation envoyée !');
+      alert('Invitation envoyée');
     } catch (error) {
       alert(error.response?.data?.message || 'Erreur');
     }
@@ -70,6 +70,7 @@ const Profile = () => {
       alert('Avatar mis à jour');
     } catch (error) {
       console.error(error);
+      alert('Erreur upload');
     } finally {
       setUploading(false);
       setAvatarFile(null);
@@ -109,7 +110,7 @@ const Profile = () => {
           <div className="friends-grid">
             {friends.map(friend => (
               <div key={friend._id} className="friend-card">
-                <img src={friend.avatar || '/default-avatar.png'} alt={friend.name} />
+                <img src={friend.avatar || '/default-avatar.png'} alt={friend.name} className="friend-avatar" />
                 <div>
                   <strong>{friend.name}</strong>
                   <button onClick={() => navigate(`/profile/${friend._id}`)}>Voir profil</button>
