@@ -12,6 +12,7 @@ const Chat = () => {
   const socket = useSocket();
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,7 +43,7 @@ const Chat = () => {
       });
       return () => socket.off('newMessage');
     }
-  }, [conversationId, socket]);
+  }, [conversationId, socket, user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,34 +51,44 @@ const Chat = () => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || sending) return;
+    setSending(true);
+    const messageText = newMessage;
+    setNewMessage(''); // Optimiste
     try {
       if (socket) {
-        socket.emit('sendMessage', { conversationId, text: newMessage });
-        setNewMessage('');
+        socket.emit('sendMessage', { conversationId, text: messageText });
       } else {
-        const { data } = await api.post('/messages', { conversationId, text: newMessage });
+        const { data } = await api.post('/messages', { conversationId, text: messageText });
         setMessages(prev => [...prev, data]);
-        setNewMessage('');
       }
     } catch (error) {
       console.error('Erreur envoi message:', error);
+      // Réinsérer le message en cas d'erreur
+      setNewMessage(messageText);
+    } finally {
+      setSending(false);
     }
   };
 
-  if (!conversation) return <div>Chargement...</div>;
+  if (!conversation) return <div className="loading">Chargement...</div>;
 
   const otherUser = conversation.participants.find(p => p._id !== user._id);
 
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <img src={otherUser.avatar || '/default-avatar.png'} alt={otherUser.name} className="chat-avatar" />
-        <h3>{otherUser.name}</h3>
+        <img 
+          src={otherUser?.avatar || '/default-avatar.png'} 
+          alt={otherUser?.name} 
+          className="chat-avatar"
+          onError={(e) => e.target.src = '/default-avatar.png'}
+        />
+        <h3>{otherUser?.name || 'Utilisateur'}</h3>
       </div>
       <div className="messages-list">
         {messages.map(msg => (
-          <div key={msg._id} className={`message ${msg.sender._id === user._id ? 'own' : 'other'}`}>
+          <div key={msg._id} className={`message ${msg.sender?._id === user?._id ? 'own' : 'other'}`}>
             <div className="message-text">{msg.text}</div>
             <div className="message-time">{new Date(msg.createdAt).toLocaleTimeString()}</div>
           </div>
@@ -90,8 +101,9 @@ const Chat = () => {
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Écrivez un message..."
+          disabled={sending}
         />
-        <button type="submit">Envoyer</button>
+        <button type="submit" disabled={sending}>Envoyer</button>
       </form>
     </div>
   );

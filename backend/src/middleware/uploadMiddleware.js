@@ -10,16 +10,15 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: (req, file) => {
-    const isVideo = file.mimetype.startsWith('video/');
-    return {
-      folder: 'posts',
-      resource_type: isVideo ? 'video' : 'image',
-      allowed_formats: isVideo ? ['mp4', 'mov', 'avi', 'webm'] : ['jpg', 'jpeg', 'png', 'gif'],
-      transformation: isVideo ? [{ width: 720, crop: 'limit' }] : [{ width: 800, crop: 'limit' }]
-    };
+  params: {
+    folder: 'avatars',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    transformation: [{ width: 200, height: 200, crop: 'limit' }],
   },
 });
 
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50 MB max
+const upload = multer({ 
+  storage, 
+  limits: { fileSize: 5 * 1024 * 1024 } // 5 MB max
+});
 module.exports = upload;

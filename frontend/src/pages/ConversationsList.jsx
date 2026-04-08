@@ -22,20 +22,24 @@ const ConversationsList = () => {
     fetchConversations();
   }, []);
 
-  if (loading) return <div>Chargement...</div>;
+  if (loading) return <div className="loading">Chargement...</div>;
 
   return (
     <div className="conversations-container">
       <h2>Mes conversations</h2>
       {conversations.length === 0 && <p>Aucune conversation. Commencez à discuter avec un ami.</p>}
       {conversations.map(conv => {
-        const otherUser = conv.participants.find(p => p._id !== user._id);
+        const otherUser = conv.participants?.find(p => p._id !== user._id);
         return (
           <Link to={`/messages/${conv._id}`} key={conv._id} className="conversation-card">
-            <img src={otherUser.avatar || '/default-avatar.png'} alt={otherUser.name} />
+            <img 
+              src={otherUser?.avatar || '/default-avatar.png'} 
+              alt={otherUser?.name} 
+              onError={(e) => e.target.src = '/default-avatar.png'}
+            />
             <div>
-              <h4>{otherUser.name}</h4>
-              <p>{conv.lastMessage || 'Nouvelle conversation'}</p>
+              <h4>{otherUser?.name || 'Utilisateur'}</h4>
+              <p className="last-message">{conv.lastMessage || 'Nouvelle conversation'}</p>
             </div>
           </Link>
         );

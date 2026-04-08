@@ -55,27 +55,32 @@ const Profile = () => {
     }
   };
 
-  const handleAvatarUpload = async (e) => {
-    e.preventDefault();
-    if (!avatarFile) return;
-    const formData = new FormData();
-    formData.append('avatar', avatarFile);
-    setUploading(true);
-    try {
-      const { data } = await api.put('/users/avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setUser({ ...currentUser, avatar: data.avatar });
-      setProfileUser({ ...profileUser, avatar: data.avatar });
-      alert('Avatar mis à jour');
-    } catch (error) {
-      console.error(error);
-      alert('Erreur upload');
-    } finally {
-      setUploading(false);
-      setAvatarFile(null);
-    }
-  };
+  // Dans Profile.jsx, remplacez handleAvatarUpload par :
+
+const handleAvatarUpload = async (e) => {
+  e.preventDefault();
+  if (!avatarFile) {
+    alert('Veuillez sélectionner un fichier');
+    return;
+  }
+  const formData = new FormData();
+  formData.append('avatar', avatarFile);
+  setUploading(true);
+  try {
+    const { data } = await api.put('/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    setUser({ ...currentUser, avatar: data.avatar });
+    setProfileUser({ ...profileUser, avatar: data.avatar });
+    alert('Avatar mis à jour avec succès');
+    setAvatarFile(null);
+  } catch (error) {
+    console.error('Upload error:', error.response?.data);
+    alert(error.response?.data?.message || 'Erreur lors de l\'upload');
+  } finally {
+    setUploading(false);
+  }
+};
 
   if (loading) return <div className="loading">Chargement...</div>;
   if (!profileUser) return <div className="error">Utilisateur non trouvé</div>;
