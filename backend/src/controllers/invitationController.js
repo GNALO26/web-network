@@ -9,7 +9,6 @@ const sendInvitation = async (req, res) => {
     if (senderId.toString() === receiverId) return res.status(400).json({ message: 'Vous ne pouvez pas vous inviter vous-même' });
     const receiver = await User.findById(receiverId);
     if (!receiver) return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    // Vérifier si une invitation existe déjà (pending ou accepted)
     const existing = await Invitation.findOne({
       $or: [
         { sender: senderId, receiver: receiverId },

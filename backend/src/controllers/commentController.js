@@ -13,13 +13,12 @@ const addComment = async (req, res) => {
       post: post._id
     });
     const populatedComment = await comment.populate('author', 'name avatar');
-    // Notification à l'auteur du post
     if (post.author.toString() !== req.user._id.toString()) {
       await Notification.create({
         recipient: post.author,
         sender: req.user._id,
         type: 'comment',
-        referenceId: post._id  // ← pour rediriger vers le post
+        referenceId: post._id
       });
       const io = req.app.get('io');
       if (io) io.to(post.author.toString()).emit('notification', { type: 'comment' });

@@ -1,4 +1,3 @@
-// backend/src/controllers/messageController.js
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const Notification = require('../models/Notification');
@@ -30,7 +29,7 @@ const sendMessage = async (req, res) => {
       sender: req.user._id,
       text
     });
-    conversation.lastMessage = text || '[Fichier]';
+    conversation.lastMessage = text;
     conversation.lastMessageTime = Date.now();
     await conversation.save();
     const populatedMessage = await message.populate('sender', 'name avatar');
@@ -52,7 +51,6 @@ const sendMessage = async (req, res) => {
   }
 };
 
-// NOUVEAU : envoi de fichier
 const sendFileMessage = async (req, res) => {
   try {
     const { conversationId } = req.body;

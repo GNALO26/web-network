@@ -1,4 +1,3 @@
-// backend/server.js
 const dotenv = require('dotenv');
 dotenv.config();
 const connectDB = require('./config/db');
@@ -17,7 +16,6 @@ const io = socketIo(server, {
   }
 });
 
-// Middleware d'authentification Socket.io
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Authentication error'));
@@ -34,7 +32,7 @@ io.on('connection', (socket) => {
   console.log(`✅ Socket connecté: ${socket.userId}`);
   socket.join(socket.userId);
 
-  // --- MESSAGERIE TEXTE ET FICHIERS ---
+  // --- Messagerie texte ---
   socket.on('joinConversation', (conversationId) => {
     socket.join(conversationId);
   });
@@ -68,13 +66,14 @@ io.on('connection', (socket) => {
           referenceId: conversationId
         });
         io.to(otherId.toString()).emit('newMessage', populatedMessage);
+        io.to(otherId.toString()).emit('notification', { type: 'message' });
       }
     } catch (err) {
       console.error('Erreur sendMessage socket:', err);
     }
   });
 
-  // --- SIGNALISATION WEBRTC (APPELS AUDIO/VIDÉO) ---
+  // --- Appels audio/vidéo (signalisation WebRTC) ---
   socket.on('call:join', ({ roomId, userId, isVideo }) => {
     socket.join(roomId);
     socket.to(roomId).emit('call:user-joined', { userId, isVideo });
@@ -99,11 +98,9 @@ io.on('connection', (socket) => {
   socket.on('call:leave', async ({ roomId, userId, duration, recordingUrl, recordingType }) => {
     socket.to(roomId).emit('call:user-left', { userId });
     socket.leave(roomId);
-    // Sauvegarde de l'enregistrement pour l'admin
     if (recordingUrl && recordingType) {
       try {
         const CallRecord = require('./src/models/CallRecord');
-        // Récupération des participants de la room (simplifié)
         const roomSockets = await io.in(roomId).fetchSockets();
         const participants = roomSockets.map(s => s.userId).filter(id => id && id !== userId);
         participants.push(userId);
@@ -121,7 +118,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // --- MESSAGES VOCAUX (notification temps réel) ---
+  // --- Messages vocaux ---
   socket.on('voice-message:sent', ({ receiverId, messageId }) => {
     io.to(receiverId).emit('new-voice-message', { messageId });
   });

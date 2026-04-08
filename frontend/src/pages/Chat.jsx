@@ -1,4 +1,3 @@
-// frontend/src/pages/Chat.jsx
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
@@ -17,7 +16,7 @@ const Chat = () => {
   const messagesEndRef = useRef(null);
   const [sending, setSending] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
-  const [callType, setCallType] = useState(null); // 'audio' ou 'video'
+  const [callType, setCallType] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,10 +95,10 @@ const Chat = () => {
           </div>
         </div>
         <div className="call-actions">
-          <button onClick={() => { setCallType('audio'); setShowCallModal(true); }} className="call-btn audio">
+          <button onClick={() => { setCallType('audio'); setShowCallModal(true); }} className="call-btn audio" title="Appel audio">
             <i className="fas fa-phone"></i> Audio
           </button>
-          <button onClick={() => { setCallType('video'); setShowCallModal(true); }} className="call-btn video">
+          <button onClick={() => { setCallType('video'); setShowCallModal(true); }} className="call-btn video" title="Appel vidéo">
             <i className="fas fa-video"></i> Vidéo
           </button>
         </div>

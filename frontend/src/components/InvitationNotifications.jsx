@@ -30,7 +30,6 @@ const InvitationNotifications = () => {
     try {
       await api.put(`/invitations/${invitationId}/accept`);
       fetchPending();
-      alert('Invitation acceptée');
     } catch (error) {
       console.error(error);
     }
@@ -40,7 +39,6 @@ const InvitationNotifications = () => {
     try {
       await api.put(`/invitations/${invitationId}/decline`);
       fetchPending();
-      alert('Invitation refusée');
     } catch (error) {
       console.error(error);
     }

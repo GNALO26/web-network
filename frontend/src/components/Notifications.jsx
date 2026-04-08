@@ -39,40 +39,14 @@ const Notifications = () => {
 
   const handleClick = (notif) => {
     setShow(false);
-    markAsRead(); // marquer comme lue au clic
-    // Redirection selon le type
-    if (notif.type === 'invitation') {
-      navigate('/explore');
-    } else if (notif.type === 'message') {
-      // Rediriger vers la conversation concernée
-      if (notif.referenceId) {
-        navigate(`/messages/${notif.referenceId}`);
-      } else {
-        navigate('/conversations');
-      }
-    } else if (notif.type === 'like' || notif.type === 'comment') {
-      // Rediriger vers le post concerné (page d'accueil avec ancrage)
-      if (notif.referenceId) {
-        navigate(`/?postId=${notif.referenceId}`);
-      } else {
-        navigate('/');
-      }
-    } else {
-      navigate('/');
-    }
+    markAsRead();
+    if (notif.type === 'invitation') navigate('/explore');
+    else if (notif.type === 'message') navigate(`/messages/${notif.referenceId}`);
+    else if (notif.type === 'like' || notif.type === 'comment') navigate(`/?postId=${notif.referenceId}`);
+    else navigate('/');
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
-
-  const getNotificationText = (notif) => {
-    switch (notif.type) {
-      case 'invitation': return 'vous a envoyé une invitation';
-      case 'message': return 'vous a envoyé un message';
-      case 'like': return 'a aimé votre publication';
-      case 'comment': return 'a commenté votre publication';
-      default: return 'a interagi avec vous';
-    }
-  };
 
   return (
     <div className="notifications-container">
@@ -82,19 +56,19 @@ const Notifications = () => {
       {show && (
         <div className="notifications-dropdown">
           {notifications.length === 0 ? (
-            <div className="no-notif">Aucune notification</div>
+            <div>Aucune notification</div>
           ) : (
             notifications.map(notif => (
-              <div 
-                key={notif._id} 
-                className={`notification-item ${!notif.read ? 'unread' : ''}`}
-                onClick={() => handleClick(notif)}
-                style={{ cursor: 'pointer' }}
-              >
+              <div key={notif._id} className={`notification-item ${!notif.read ? 'unread' : ''}`} onClick={() => handleClick(notif)}>
                 <img src={notif.sender?.avatar || '/default-avatar.png'} alt={notif.sender?.name} />
                 <div>
                   <strong>{notif.sender?.name}</strong>
-                  <p>{getNotificationText(notif)}</p>
+                  <p>
+                    {notif.type === 'invitation' && 'vous a envoyé une invitation'}
+                    {notif.type === 'message' && 'vous a envoyé un message'}
+                    {notif.type === 'like' && 'a aimé votre publication'}
+                    {notif.type === 'comment' && 'a commenté votre publication'}
+                  </p>
                   <small>{new Date(notif.createdAt).toLocaleDateString()}</small>
                 </div>
               </div>

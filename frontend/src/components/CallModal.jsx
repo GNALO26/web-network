@@ -1,4 +1,3 @@
-// frontend/src/components/CallModal.jsx
 import { useEffect, useRef, useState } from 'react';
 import Peer from 'simple-peer';
 import io from 'socket.io-client';
@@ -35,9 +34,7 @@ const CallModal = ({ roomId, isVideo, otherUser, onClose }) => {
           mediaRecorderRef.current.start(1000);
         }
 
-        // L'initiateur est celui qui a cliqué sur "Appeler". Ici on simplifie : le premier à rejoindre la room sera initiateur.
-        // En production, il faudrait un mécanisme plus robuste.
-        const isInitiator = true; // À adapter selon votre logique de room
+        const isInitiator = true; // À adapter si besoin (peut être déterminé par un événement)
         const newPeer = new Peer({ initiator: isInitiator, stream, trickle: false });
         setPeer(newPeer);
 

@@ -1,12 +1,9 @@
-// frontend/src/components/VoiceRecorder.jsx
 import { useState, useRef, useEffect } from 'react';
 import api from '../services/api';
 
 const VoiceRecorder = ({ receiverId, onSent }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [audioURL, setAudioURL] = useState(null);
-  const [showPreview, setShowPreview] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const timerRef = useRef(null);
@@ -21,12 +18,18 @@ const VoiceRecorder = ({ receiverId, onSent }) => {
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) audioChunksRef.current.push(event.data);
         };
-        mediaRecorder.onstop = () => {
+        mediaRecorder.onstop = async () => {
           const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          const url = URL.createObjectURL(blob);
-          setAudioURL(url);
-          setShowPreview(true);
-          setIsRecording(false);
+          const formData = new FormData();
+          formData.append('file', blob, 'voice.webm');
+          const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+          const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          await api.post('/voice-messages', { receiverId, audioUrl: data.secure_url, duration: recordingTime });
+          if (onSent) onSent();
           stream.getTracks().forEach(track => track.stop());
         };
         mediaRecorder.start();
@@ -43,6 +46,8 @@ const VoiceRecorder = ({ receiverId, onSent }) => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
       clearInterval(timerRef.current);
+      setIsRecording(false);
+      setRecordingTime(0);
     }
   };
 
@@ -50,29 +55,10 @@ const VoiceRecorder = ({ receiverId, onSent }) => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
       clearInterval(timerRef.current);
-      audioChunksRef.current = [];
       setIsRecording(false);
       setRecordingTime(0);
-      setShowPreview(false);
-      setAudioURL(null);
+      audioChunksRef.current = [];
     }
-  };
-
-  const sendRecording = async () => {
-    if (!audioURL) return;
-    const blob = await fetch(audioURL).then(r => r.blob());
-    const formData = new FormData();
-    formData.append('file', blob, 'voice.webm');
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
-      method: 'POST',
-      body: formData
-    });
-    const data = await res.json();
-    await api.post('/voice-messages', { receiverId, audioUrl: data.secure_url, duration: recordingTime });
-    setShowPreview(false);
-    setAudioURL(null);
-    if (onSent) onSent();
   };
 
   const handleMouseDown = (e) => {
@@ -94,26 +80,18 @@ const VoiceRecorder = ({ receiverId, onSent }) => {
 
   return (
     <div className="voice-recorder-container">
-      {!showPreview ? (
-        <button
-          className={`voice-record-btn ${isRecording ? 'recording' : ''}`}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
-          onTouchStart={handleMouseDown}
-          onTouchEnd={handleMouseUp}
-          onTouchCancel={handleMouseLeave}
-        >
-          <i className="fas fa-microphone"></i>
-          {isRecording && <span className="recording-time">{recordingTime}s</span>}
-        </button>
-      ) : (
-        <div className="voice-preview">
-          <audio controls src={audioURL} />
-          <button onClick={sendRecording} className="send-voice-btn"><i className="fas fa-paper-plane"></i></button>
-          <button onClick={cancelRecording} className="cancel-voice-btn"><i className="fas fa-trash"></i></button>
-        </div>
-      )}
+      <button
+        className={`voice-record-btn ${isRecording ? 'recording' : ''}`}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleMouseDown}
+        onTouchEnd={handleMouseUp}
+        onTouchCancel={handleMouseLeave}
+      >
+        <i className="fas fa-microphone"></i>
+        {isRecording && <span className="recording-time">{recordingTime}s</span>}
+      </button>
     </div>
   );
 };
