@@ -4,7 +4,7 @@ import api from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import VoiceRecorder from '../components/VoiceRecorder';
-import VideoCall from '../components/VideoCall';
+import CallModal from '../components/CallModal';
 
 const Chat = () => {
   const { conversationId } = useParams();
@@ -15,8 +15,8 @@ const Chat = () => {
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
   const [sending, setSending] = useState(false);
-  const [showCall, setShowCall] = useState(false);
-  const [callType, setCallType] = useState(null);
+  const [showCallModal, setShowCallModal] = useState(false);
+  const [callType, setCallType] = useState(null); // 'audio' ou 'video'
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,31 +87,32 @@ const Chat = () => {
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <img src={otherUser?.avatar || '/default-avatar.png'} alt={otherUser?.name} className="chat-avatar" />
-        <h3>{otherUser?.name || 'Utilisateur'}</h3>
-        <div className="call-buttons">
-          <button onClick={() => { setCallType('audio'); setShowCall(true); }}>🎙️ Appel audio</button>
-          <button onClick={() => { setCallType('video'); setShowCall(true); }}>📹 Appel vidéo</button>
+        <div className="chat-user-info">
+          <img src={otherUser?.avatar || '/default-avatar.png'} alt={otherUser?.name} />
+          <div>
+            <h3>{otherUser?.name || 'Utilisateur'}</h3>
+            <span className="online-status">En ligne</span>
+          </div>
+        </div>
+        <div className="call-actions">
+          <button onClick={() => { setCallType('audio'); setShowCallModal(true); }} className="call-btn audio">
+            <i className="fas fa-phone"></i> Audio
+          </button>
+          <button onClick={() => { setCallType('video'); setShowCallModal(true); }} className="call-btn video">
+            <i className="fas fa-video"></i> Vidéo
+          </button>
         </div>
       </div>
-      {showCall && (
-        <VideoCall
-          roomId={conversationId}
-          isVideo={callType === 'video'}
-          onEnd={() => setShowCall(false)}
-        />
-      )}
+
       <div className="messages-list">
         {messages.map(msg => (
           <div key={msg._id} className={`message ${msg.sender?._id === user?._id ? 'own' : 'other'}`}>
             {msg.text && <div className="message-text">{msg.text}</div>}
             {msg.fileUrl && (
               <div className="message-file">
-                {msg.fileType === 'image' && <img src={msg.fileUrl} alt="image" className="message-image" />}
-                {msg.fileType === 'video' && <video src={msg.fileUrl} controls className="message-video" />}
-                {msg.fileType === 'document' && (
-                  <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">📄 Télécharger</a>
-                )}
+                {msg.fileType === 'image' && <img src={msg.fileUrl} alt="media" />}
+                {msg.fileType === 'video' && <video src={msg.fileUrl} controls />}
+                {msg.fileType === 'document' && <a href={msg.fileUrl} target="_blank">📄 Document</a>}
               </div>
             )}
             <div className="message-time">{new Date(msg.createdAt).toLocaleTimeString()}</div>
@@ -119,17 +120,31 @@ const Chat = () => {
         ))}
         <div ref={messagesEndRef} />
       </div>
-      <form onSubmit={handleSendText} className="message-form">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Écrivez un message..."
-          disabled={sending}
+
+      <div className="message-input-area">
+        <form onSubmit={handleSendText} className="message-form">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Écrivez un message..."
+            disabled={sending}
+          />
+          <VoiceRecorder receiverId={otherUser?._id} onSent={() => {}} />
+          <button type="submit" disabled={sending}>
+            <i className="fas fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
+
+      {showCallModal && (
+        <CallModal
+          roomId={conversationId}
+          isVideo={callType === 'video'}
+          otherUser={otherUser}
+          onClose={() => setShowCallModal(false)}
         />
-        <VoiceRecorder receiverId={otherUser?._id} onSent={() => {}} />
-        <button type="submit" disabled={sending}>Envoyer</button>
-      </form>
+      )}
     </div>
   );
 };
