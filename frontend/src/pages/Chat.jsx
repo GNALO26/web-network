@@ -1,4 +1,3 @@
-// frontend/src/pages/Chat.jsx
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
@@ -6,7 +5,6 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import VoiceRecorder from '../components/VoiceRecorder';
 import VideoCall from '../components/VideoCall';
-import { useState } from 'react';
 
 const Chat = () => {
   const { conversationId } = useParams();
@@ -17,7 +15,6 @@ const Chat = () => {
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
   const [sending, setSending] = useState(false);
-  const fileInputRef = useRef(null);
   const [showCall, setShowCall] = useState(false);
   const [callType, setCallType] = useState(null);
 
@@ -83,48 +80,6 @@ const Chat = () => {
     }
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('conversationId', conversationId);
-    setSending(true);
-    const tempId = Date.now();
-    const fileType = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : 'document');
-    const tempMessage = {
-      _id: tempId,
-      text: '',
-      fileUrl: URL.createObjectURL(file),
-      fileType,
-      sender: { _id: user._id, name: user.name, avatar: user.avatar },
-      createdAt: new Date().toISOString(),
-      conversation: conversationId,
-      isTemp: true
-    };
-    <div className="call-buttons">
-  <button onClick={() => { setCallType('audio'); setShowCall(true); }}>🎙️ Appel audio</button>
-  <button onClick={() => { setCallType('video'); setShowCall(true); }}>📹 Appel vidéo</button>
-</div>
-{showCall && (
-  <VideoCall roomId={conversationId} isVideo={callType === 'video'} onEnd={() => setShowCall(false)} />
-)}
-    setMessages(prev => [...prev, tempMessage]);
-    try {
-      const { data } = await api.post('/messages/file', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setMessages(prev => prev.map(m => m._id === tempId ? data : m));
-    } catch (error) {
-      console.error('Erreur upload fichier:', error);
-      setMessages(prev => prev.filter(m => m._id !== tempId));
-      alert('Erreur lors de l\'envoi du fichier');
-    } finally {
-      setSending(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
   if (!conversation) return <div className="loading">Chargement...</div>;
 
   const otherUser = conversation.participants?.find(p => p._id !== user._id);
@@ -134,7 +89,18 @@ const Chat = () => {
       <div className="chat-header">
         <img src={otherUser?.avatar || '/default-avatar.png'} alt={otherUser?.name} className="chat-avatar" />
         <h3>{otherUser?.name || 'Utilisateur'}</h3>
+        <div className="call-buttons">
+          <button onClick={() => { setCallType('audio'); setShowCall(true); }}>🎙️ Appel audio</button>
+          <button onClick={() => { setCallType('video'); setShowCall(true); }}>📹 Appel vidéo</button>
+        </div>
       </div>
+      {showCall && (
+        <VideoCall
+          roomId={conversationId}
+          isVideo={callType === 'video'}
+          onEnd={() => setShowCall(false)}
+        />
+      )}
       <div className="messages-list">
         {messages.map(msg => (
           <div key={msg._id} className={`message ${msg.sender?._id === user?._id ? 'own' : 'other'}`}>
@@ -144,9 +110,7 @@ const Chat = () => {
                 {msg.fileType === 'image' && <img src={msg.fileUrl} alt="image" className="message-image" />}
                 {msg.fileType === 'video' && <video src={msg.fileUrl} controls className="message-video" />}
                 {msg.fileType === 'document' && (
-                  <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="message-document">
-                    📄 Télécharger le fichier
-                  </a>
+                  <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">📄 Télécharger</a>
                 )}
               </div>
             )}
@@ -163,11 +127,7 @@ const Chat = () => {
           placeholder="Écrivez un message..."
           disabled={sending}
         />
-        <VoiceRecorder receiverId={otherUser._id} onSent={() => {}} />
-        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending}>
-          📎
-        </button>
-        <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} accept="image/*,video/*,.pdf,.doc,.docx,.txt" />
+        <VoiceRecorder receiverId={otherUser?._id} onSent={() => {}} />
         <button type="submit" disabled={sending}>Envoyer</button>
       </form>
     </div>
