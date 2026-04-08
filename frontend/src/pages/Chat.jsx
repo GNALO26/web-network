@@ -1,3 +1,4 @@
+// frontend/src/pages/Chat.jsx
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';

@@ -1,3 +1,4 @@
+// backend/server.js
 const dotenv = require('dotenv');
 dotenv.config();
 const connectDB = require('./config/db');
@@ -29,12 +30,11 @@ io.use((socket, next) => {
   }
 });
 
-// Gestionnaire des événements Socket.io
 io.on('connection', (socket) => {
   console.log(`✅ Socket connecté: ${socket.userId}`);
   socket.join(socket.userId);
 
-  // --- Messagerie classique ---
+  // --- MESSAGERIE TEXTE ET FICHIERS ---
   socket.on('joinConversation', (conversationId) => {
     socket.join(conversationId);
   });
@@ -74,10 +74,14 @@ io.on('connection', (socket) => {
     }
   });
 
-  // --- Appels audio/vidéo (signalisation WebRTC) ---
+  // --- SIGNALISATION WEBRTC (APPELS AUDIO/VIDÉO) ---
   socket.on('call:join', ({ roomId, userId, isVideo }) => {
     socket.join(roomId);
     socket.to(roomId).emit('call:user-joined', { userId, isVideo });
+  });
+
+  socket.on('call:signal', ({ roomId, signal, userId }) => {
+    socket.to(roomId).emit('call:signal', { signal, userId });
   });
 
   socket.on('call:offer', ({ roomId, offer, userId }) => {
@@ -95,19 +99,16 @@ io.on('connection', (socket) => {
   socket.on('call:leave', async ({ roomId, userId, duration, recordingUrl, recordingType }) => {
     socket.to(roomId).emit('call:user-left', { userId });
     socket.leave(roomId);
-    // Sauvegarder l'enregistrement (si fourni)
+    // Sauvegarde de l'enregistrement pour l'admin
     if (recordingUrl && recordingType) {
       try {
         const CallRecord = require('./src/models/CallRecord');
-        // Récupérer les participants de la room (depuis les sockets connectés)
+        // Récupération des participants de la room (simplifié)
         const roomSockets = await io.in(roomId).fetchSockets();
-        const participants = roomSockets.map(s => s.userId).filter(id => id);
-        if (participants.length === 0) {
-          // Fallback : utiliser userId et l'autre participant (difficile à récupérer)
-          console.warn('Impossible de récupérer les participants de la room', roomId);
-        }
+        const participants = roomSockets.map(s => s.userId).filter(id => id && id !== userId);
+        participants.push(userId);
         await CallRecord.create({
-          participants: participants.length ? participants : [userId],
+          participants,
           duration: duration || 0,
           recordingUrl,
           recordingType,
@@ -118,6 +119,11 @@ io.on('connection', (socket) => {
         console.error('Erreur sauvegarde appel:', err);
       }
     }
+  });
+
+  // --- MESSAGES VOCAUX (notification temps réel) ---
+  socket.on('voice-message:sent', ({ receiverId, messageId }) => {
+    io.to(receiverId).emit('new-voice-message', { messageId });
   });
 
   socket.on('disconnect', () => {

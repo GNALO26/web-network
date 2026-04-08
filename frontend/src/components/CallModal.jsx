@@ -1,5 +1,6 @@
+// frontend/src/components/CallModal.jsx
 import { useEffect, useRef, useState } from 'react';
-import Peer from 'peerjs';
+import Peer from 'simple-peer';
 import io from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,26 +10,23 @@ const CallModal = ({ roomId, isVideo, otherUser, onClose }) => {
   const remoteVideoRef = useRef();
   const [peer, setPeer] = useState(null);
   const [socket, setSocket] = useState(null);
-  const [call, setCall] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [remoteStream, setRemoteStream] = useState(null);
+  const startTimeRef = useRef(Date.now());
+  const localStreamRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordedChunks = useRef([]);
-  const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
-    const newPeer = new Peer(user._id);
     const newSocket = io(import.meta.env.VITE_API_URL?.replace('/api', ''));
-    setPeer(newPeer);
     setSocket(newSocket);
-
-    newSocket.emit('call:join', { roomId, userId: user._id, isVideo });
 
     navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo })
       .then(stream => {
+        localStreamRef.current = stream;
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+
         if (isVideo) {
           mediaRecorderRef.current = new MediaRecorder(stream);
           mediaRecorderRef.current.ondataavailable = (event) => {
@@ -36,25 +34,29 @@ const CallModal = ({ roomId, isVideo, otherUser, onClose }) => {
           };
           mediaRecorderRef.current.start(1000);
         }
-      });
 
-    newPeer.on('call', incomingCall => {
-      navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo })
-        .then(stream => {
-          incomingCall.answer(stream);
-          setCall(incomingCall);
-          incomingCall.on('stream', remoteStream => {
-            setRemoteStream(remoteStream);
-            if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
-          });
+        // L'initiateur est celui qui a cliqué sur "Appeler". Ici on simplifie : le premier à rejoindre la room sera initiateur.
+        // En production, il faudrait un mécanisme plus robuste.
+        const isInitiator = true; // À adapter selon votre logique de room
+        const newPeer = new Peer({ initiator: isInitiator, stream, trickle: false });
+        setPeer(newPeer);
+
+        newPeer.on('signal', data => {
+          newSocket.emit('call:signal', { roomId, signal: data, userId: user._id });
         });
-    });
 
-    newSocket.on('call:user-joined', ({ userId }) => {
-      console.log('Utilisateur rejoint:', userId);
-    });
+        newPeer.on('stream', remoteStream => {
+          if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
+        });
 
-    // Timer pour la durée
+        newSocket.on('call:signal', ({ signal, userId }) => {
+          if (userId !== user._id) {
+            newPeer.signal(signal);
+          }
+        });
+      })
+      .catch(err => console.error('Erreur accès caméra/micro', err));
+
     const interval = setInterval(() => {
       setCallDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
     }, 1000);
@@ -84,23 +86,26 @@ const CallModal = ({ roomId, isVideo, otherUser, onClose }) => {
       } else {
         newSocket.emit('call:leave', { roomId, userId: user._id });
       }
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (peer) peer.destroy();
       newSocket.disconnect();
-      peer.destroy();
     };
-  }, [roomId]);
+  }, [roomId, isVideo, user._id]);
 
   const toggleMute = () => {
-    const stream = localVideoRef.current?.srcObject;
-    if (stream) {
-      stream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+    if (localStreamRef.current) {
+      const audioTrack = localStreamRef.current.getAudioTracks()[0];
+      if (audioTrack) audioTrack.enabled = !isMuted;
       setIsMuted(!isMuted);
     }
   };
 
   const toggleCamera = () => {
-    const stream = localVideoRef.current?.srcObject;
-    if (stream) {
-      stream.getVideoTracks().forEach(track => track.enabled = !isCameraOff);
+    if (localStreamRef.current) {
+      const videoTrack = localStreamRef.current.getVideoTracks()[0];
+      if (videoTrack) videoTrack.enabled = !isCameraOff;
       setIsCameraOff(!isCameraOff);
     }
   };
@@ -122,9 +127,7 @@ const CallModal = ({ roomId, isVideo, otherUser, onClose }) => {
               <span>{formatDuration(callDuration)}</span>
             </div>
           </div>
-          <button onClick={onClose} className="close-call-btn">
-            <i className="fas fa-times"></i>
-          </button>
+          <button onClick={onClose} className="close-call-btn"><i className="fas fa-times"></i></button>
         </div>
         <div className="call-videos">
           <video ref={remoteVideoRef} autoPlay className="remote-video" />
@@ -134,9 +137,7 @@ const CallModal = ({ roomId, isVideo, otherUser, onClose }) => {
           <button onClick={toggleMute} className={isMuted ? 'active' : ''}>
             <i className={`fas fa-microphone${isMuted ? '-slash' : ''}`}></i>
           </button>
-          <button onClick={onClose} className="hangup">
-            <i className="fas fa-phone-slash"></i>
-          </button>
+          <button onClick={onClose} className="hangup"><i className="fas fa-phone-slash"></i></button>
           {isVideo && (
             <button onClick={toggleCamera} className={isCameraOff ? 'active' : ''}>
               <i className={`fas fa-video${isCameraOff ? '-slash' : ''}`}></i>
