@@ -13,9 +13,11 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      api.get('/auth/profile')
+      api
+        .get('/auth/profile')
         .then(({ data }) => setUser(data))
-        .catch(() => {
+        .catch((err) => {
+          console.error('Erreur récupération profil:', err);
           localStorage.removeItem('token');
           delete api.defaults.headers.common['Authorization'];
         })
@@ -26,17 +28,29 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', data.token);
-    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-    setUser(data);
+    try {
+      const { data } = await api.post('/auth/login', { email, password });
+      localStorage.setItem('token', data.token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+      setUser(data);
+      return data;
+    } catch (error) {
+      console.error('Login error details:', error.response?.data);
+      throw error;
+    }
   };
 
   const register = async (name, email, password) => {
-    const { data } = await api.post('/auth/register', { name, email, password });
-    localStorage.setItem('token', data.token);
-    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-    setUser(data);
+    try {
+      const { data } = await api.post('/auth/register', { name, email, password });
+      localStorage.setItem('token', data.token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+      setUser(data);
+      return data;
+    } catch (error) {
+      console.error('Register error details:', error.response?.data);
+      throw error;
+    }
   };
 
   const logout = () => {

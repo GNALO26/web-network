@@ -11,11 +11,15 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur de connexion');
+      // Afficher le message d'erreur renvoyé par le backend
+      const message = err.response?.data?.message || 'Erreur de connexion';
+      setError(message);
+      console.error('Login error:', err);
     }
   };
 
@@ -44,9 +48,7 @@ const Login = () => {
         </div>
         <button type="submit">Se connecter</button>
       </form>
-      <p>
-        Pas encore de compte ? <Link to="/register">S'inscrire</Link>
-      </p>
+      <p>Pas encore de compte ? <Link to="/register">S'inscrire</Link></p>
     </div>
   );
 };

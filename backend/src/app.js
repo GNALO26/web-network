@@ -10,9 +10,12 @@ const invitationRoutes = require('./routes/invitationRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+
+// CORS configuré pour accepter toutes les origines en développement
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
@@ -22,6 +25,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+// Gestion des erreurs 404
 app.use((req, res) => {
   res.status(404).json({ message: 'Route non trouvée' });
 });
