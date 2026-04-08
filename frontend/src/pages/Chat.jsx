@@ -4,6 +4,9 @@ import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import VoiceRecorder from '../components/VoiceRecorder';
+import VideoCall from '../components/VideoCall';
+import { useState } from 'react';
 
 const Chat = () => {
   const { conversationId } = useParams();
@@ -15,6 +18,8 @@ const Chat = () => {
   const messagesEndRef = useRef(null);
   const [sending, setSending] = useState(false);
   const fileInputRef = useRef(null);
+  const [showCall, setShowCall] = useState(false);
+  const [callType, setCallType] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,6 +102,13 @@ const Chat = () => {
       conversation: conversationId,
       isTemp: true
     };
+    <div className="call-buttons">
+  <button onClick={() => { setCallType('audio'); setShowCall(true); }}>🎙️ Appel audio</button>
+  <button onClick={() => { setCallType('video'); setShowCall(true); }}>📹 Appel vidéo</button>
+</div>
+{showCall && (
+  <VideoCall roomId={conversationId} isVideo={callType === 'video'} onEnd={() => setShowCall(false)} />
+)}
     setMessages(prev => [...prev, tempMessage]);
     try {
       const { data } = await api.post('/messages/file', formData, {
@@ -151,6 +163,7 @@ const Chat = () => {
           placeholder="Écrivez un message..."
           disabled={sending}
         />
+        <VoiceRecorder receiverId={otherUser._id} onSent={() => {}} />
         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending}>
           📎
         </button>

@@ -9,6 +9,7 @@ import ConversationsList from './pages/ConversationsList';
 import Chat from './pages/Chat';
 import Explore from './pages/Explore';
 import Navbar from './components/Navbar';
+import AdminDashboard from './pages/AdminDashboard';
 import './App.css';
 
 function AppRoutes() {
@@ -24,6 +25,7 @@ function AppRoutes() {
           <Route path="/" element={user ? <Feed /> : <Navigate to="/login" />} />
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
           <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
+          <Route path="/admin/dashboard" element={user?.isAdmin ? <AdminDashboard /> : <Navigate to="/" />} />
           <Route path="/conversations" element={user ? <ConversationsList /> : <Navigate to="/login" />} />
           <Route path="/messages/:conversationId" element={user ? <Chat /> : <Navigate to="/login" />} />
           <Route path="/explore" element={user ? <Explore /> : <Navigate to="/login" />} />

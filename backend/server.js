@@ -16,6 +16,7 @@ const io = socketIo(server, {
   }
 });
 
+// Middleware d'authentification Socket.io
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Authentication error'));
@@ -28,10 +29,12 @@ io.use((socket, next) => {
   }
 });
 
+// Gestionnaire des événements Socket.io
 io.on('connection', (socket) => {
   console.log(`✅ Socket connecté: ${socket.userId}`);
   socket.join(socket.userId);
 
+  // --- Messagerie classique ---
   socket.on('joinConversation', (conversationId) => {
     socket.join(conversationId);
   });
@@ -64,12 +67,56 @@ io.on('connection', (socket) => {
           type: 'message',
           referenceId: conversationId
         });
-        // Envoyer UNIQUEMENT à l'autre participant
         io.to(otherId.toString()).emit('newMessage', populatedMessage);
       }
-      // Ne rien envoyer à l'expéditeur → pas de doublon
     } catch (err) {
       console.error('Erreur sendMessage socket:', err);
+    }
+  });
+
+  // --- Appels audio/vidéo (signalisation WebRTC) ---
+  socket.on('call:join', ({ roomId, userId, isVideo }) => {
+    socket.join(roomId);
+    socket.to(roomId).emit('call:user-joined', { userId, isVideo });
+  });
+
+  socket.on('call:offer', ({ roomId, offer, userId }) => {
+    socket.to(roomId).emit('call:offer', { offer, userId });
+  });
+
+  socket.on('call:answer', ({ roomId, answer, userId }) => {
+    socket.to(roomId).emit('call:answer', { answer, userId });
+  });
+
+  socket.on('call:ice-candidate', ({ roomId, candidate, userId }) => {
+    socket.to(roomId).emit('call:ice-candidate', { candidate, userId });
+  });
+
+  socket.on('call:leave', async ({ roomId, userId, duration, recordingUrl, recordingType }) => {
+    socket.to(roomId).emit('call:user-left', { userId });
+    socket.leave(roomId);
+    // Sauvegarder l'enregistrement (si fourni)
+    if (recordingUrl && recordingType) {
+      try {
+        const CallRecord = require('./src/models/CallRecord');
+        // Récupérer les participants de la room (depuis les sockets connectés)
+        const roomSockets = await io.in(roomId).fetchSockets();
+        const participants = roomSockets.map(s => s.userId).filter(id => id);
+        if (participants.length === 0) {
+          // Fallback : utiliser userId et l'autre participant (difficile à récupérer)
+          console.warn('Impossible de récupérer les participants de la room', roomId);
+        }
+        await CallRecord.create({
+          participants: participants.length ? participants : [userId],
+          duration: duration || 0,
+          recordingUrl,
+          recordingType,
+          initiatedBy: userId,
+          endedAt: new Date()
+        });
+      } catch (err) {
+        console.error('Erreur sauvegarde appel:', err);
+      }
     }
   });
 

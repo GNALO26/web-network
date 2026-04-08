@@ -65,7 +65,7 @@ const Navbar = () => {
           </div>
         )}
       </div>
-
+        {user?.isAdmin && <Link to="/admin/dashboard">Admin</Link>}
       <div className="navbar-right">
         <InvitationNotifications />
         <Notifications />
