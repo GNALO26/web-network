@@ -1,3 +1,4 @@
+// backend/src/controllers/messageController.js
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const Notification = require('../models/Notification');
@@ -29,7 +30,7 @@ const sendMessage = async (req, res) => {
       sender: req.user._id,
       text
     });
-    conversation.lastMessage = text;
+    conversation.lastMessage = text || '[Fichier]';
     conversation.lastMessageTime = Date.now();
     await conversation.save();
     const populatedMessage = await message.populate('sender', 'name avatar');
@@ -39,7 +40,47 @@ const sendMessage = async (req, res) => {
         recipient: otherId,
         sender: req.user._id,
         type: 'message',
-        referenceId: message._id
+        referenceId: conversationId
+      });
+      const io = req.app.get('io');
+      if (io) io.to(otherId.toString()).emit('newMessage', populatedMessage);
+    }
+    res.status(201).json(populatedMessage);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// NOUVEAU : envoi de fichier
+const sendFileMessage = async (req, res) => {
+  try {
+    const { conversationId } = req.body;
+    if (!req.file) return res.status(400).json({ message: 'Aucun fichier envoyé' });
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) return res.status(404).json({ message: 'Conversation non trouvée' });
+    if (!conversation.participants.includes(req.user._id)) return res.status(403).json({ message: 'Non autorisé' });
+    let fileType = 'document';
+    if (req.file.mimetype.startsWith('image/')) fileType = 'image';
+    else if (req.file.mimetype.startsWith('video/')) fileType = 'video';
+    const message = await Message.create({
+      conversation: conversationId,
+      sender: req.user._id,
+      text: '',
+      fileUrl: req.file.path,
+      fileType
+    });
+    conversation.lastMessage = `[${fileType === 'image' ? 'Image' : fileType === 'video' ? 'Vidéo' : 'Fichier'}]`;
+    conversation.lastMessageTime = Date.now();
+    await conversation.save();
+    const populatedMessage = await message.populate('sender', 'name avatar');
+    const otherId = conversation.participants.find(p => p.toString() !== req.user._id.toString());
+    if (otherId) {
+      await Notification.create({
+        recipient: otherId,
+        sender: req.user._id,
+        type: 'message',
+        referenceId: conversationId
       });
       const io = req.app.get('io');
       if (io) io.to(otherId.toString()).emit('newMessage', populatedMessage);
@@ -64,4 +105,4 @@ const markAsRead = async (req, res) => {
   }
 };
 
-module.exports = { getMessages, sendMessage, markAsRead };
+module.exports = { getMessages, sendMessage, sendFileMessage, markAsRead };

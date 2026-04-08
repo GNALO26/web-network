@@ -78,6 +78,33 @@
     font-size: 0.75rem;
   }
 }
+/* Messages avec fichiers */
+.message-file {
+  margin-top: 5px;
+}
+.message-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.message-video {
+  max-width: 250px;
+  border-radius: 8px;
+}
+.message-document {
+  display: inline-block;
+  padding: 5px 10px;
+  background: #f0f0f0;
+  border-radius: 5px;
+  text-decoration: none;
+  color: #333;
+  font-size: 0.85rem;
+}
+.message.own .message-document {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
 /* Chat - gestion des images dans les messages (au cas où) */
 .message-text img {
   max-width: 100%;

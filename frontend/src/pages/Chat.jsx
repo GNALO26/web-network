@@ -1,3 +1,4 @@
+// frontend/src/pages/Chat.jsx
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
@@ -13,6 +14,7 @@ const Chat = () => {
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
   const [sending, setSending] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,11 +36,8 @@ const Chat = () => {
     if (socket) {
       socket.emit('joinConversation', conversationId);
       socket.on('newMessage', (msg) => {
-        // Ne pas ajouter le message s'il a été envoyé par l'utilisateur courant
-        // (car on l'a déjà ajouté localement)
         if (msg.conversation === conversationId && msg.sender._id !== user._id) {
           setMessages(prev => [...prev, msg]);
-          // Marquer comme lu immédiatement si c'est l'autre qui envoie
           api.put(`/messages/${conversationId}/read`);
         }
       });
@@ -50,13 +49,12 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (e) => {
+  const handleSendText = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || sending) return;
     setSending(true);
     const messageText = newMessage;
     setNewMessage('');
-    // Ajout optimiste (message temporaire)
     const tempMessage = {
       _id: Date.now(),
       text: messageText,
@@ -70,16 +68,48 @@ const Chat = () => {
         socket.emit('sendMessage', { conversationId, text: messageText });
       } else {
         const { data } = await api.post('/messages', { conversationId, text: messageText });
-        // Remplacer le message temporaire par le vrai (optionnel)
         setMessages(prev => prev.map(m => m._id === tempMessage._id ? data : m));
       }
     } catch (error) {
-      console.error('Erreur envoi message:', error);
-      // Retirer le message temporaire
       setMessages(prev => prev.filter(m => m._id !== tempMessage._id));
       setNewMessage(messageText);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('conversationId', conversationId);
+    setSending(true);
+    const tempId = Date.now();
+    const fileType = file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : 'document');
+    const tempMessage = {
+      _id: tempId,
+      text: '',
+      fileUrl: URL.createObjectURL(file),
+      fileType,
+      sender: { _id: user._id, name: user.name, avatar: user.avatar },
+      createdAt: new Date().toISOString(),
+      conversation: conversationId,
+      isTemp: true
+    };
+    setMessages(prev => [...prev, tempMessage]);
+    try {
+      const { data } = await api.post('/messages/file', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setMessages(prev => prev.map(m => m._id === tempId ? data : m));
+    } catch (error) {
+      console.error('Erreur upload fichier:', error);
+      setMessages(prev => prev.filter(m => m._id !== tempId));
+      alert('Erreur lors de l\'envoi du fichier');
+    } finally {
+      setSending(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -90,24 +120,30 @@ const Chat = () => {
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <img
-          src={otherUser?.avatar || '/default-avatar.png'}
-          alt={otherUser?.name}
-          className="chat-avatar"
-          onError={(e) => e.target.src = '/default-avatar.png'}
-        />
+        <img src={otherUser?.avatar || '/default-avatar.png'} alt={otherUser?.name} className="chat-avatar" />
         <h3>{otherUser?.name || 'Utilisateur'}</h3>
       </div>
       <div className="messages-list">
         {messages.map(msg => (
           <div key={msg._id} className={`message ${msg.sender?._id === user?._id ? 'own' : 'other'}`}>
-            <div className="message-text">{msg.text}</div>
+            {msg.text && <div className="message-text">{msg.text}</div>}
+            {msg.fileUrl && (
+              <div className="message-file">
+                {msg.fileType === 'image' && <img src={msg.fileUrl} alt="image" className="message-image" />}
+                {msg.fileType === 'video' && <video src={msg.fileUrl} controls className="message-video" />}
+                {msg.fileType === 'document' && (
+                  <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="message-document">
+                    📄 Télécharger le fichier
+                  </a>
+                )}
+              </div>
+            )}
             <div className="message-time">{new Date(msg.createdAt).toLocaleTimeString()}</div>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
-      <form onSubmit={handleSend} className="message-form">
+      <form onSubmit={handleSendText} className="message-form">
         <input
           type="text"
           value={newMessage}
@@ -115,6 +151,10 @@ const Chat = () => {
           placeholder="Écrivez un message..."
           disabled={sending}
         />
+        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending}>
+          📎
+        </button>
+        <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} accept="image/*,video/*,.pdf,.doc,.docx,.txt" />
         <button type="submit" disabled={sending}>Envoyer</button>
       </form>
     </div>
