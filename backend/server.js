@@ -16,7 +16,6 @@ const io = socketIo(server, {
   }
 });
 
-// Authentification Socket.io
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Authentication error'));
@@ -63,12 +62,12 @@ io.on('connection', (socket) => {
           recipient: otherId,
           sender: socket.userId,
           type: 'message',
-          referenceId: conversationId  // ← important pour redirection
+          referenceId: conversationId
         });
+        // Envoyer UNIQUEMENT à l'autre participant
         io.to(otherId.toString()).emit('newMessage', populatedMessage);
-        io.to(otherId.toString()).emit('notification', { type: 'message' });
       }
-      io.to(conversationId).emit('newMessage', populatedMessage);
+      // Ne rien envoyer à l'expéditeur → pas de doublon
     } catch (err) {
       console.error('Erreur sendMessage socket:', err);
     }

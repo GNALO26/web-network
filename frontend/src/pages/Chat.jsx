@@ -34,11 +34,12 @@ const Chat = () => {
     if (socket) {
       socket.emit('joinConversation', conversationId);
       socket.on('newMessage', (msg) => {
-        if (msg.conversation === conversationId) {
+        // Ne pas ajouter le message s'il a été envoyé par l'utilisateur courant
+        // (car on l'a déjà ajouté localement)
+        if (msg.conversation === conversationId && msg.sender._id !== user._id) {
           setMessages(prev => [...prev, msg]);
-          if (msg.sender._id !== user._id) {
-            api.put(`/messages/${conversationId}/read`);
-          }
+          // Marquer comme lu immédiatement si c'est l'autre qui envoie
+          api.put(`/messages/${conversationId}/read`);
         }
       });
       return () => socket.off('newMessage');
@@ -54,17 +55,28 @@ const Chat = () => {
     if (!newMessage.trim() || sending) return;
     setSending(true);
     const messageText = newMessage;
-    setNewMessage(''); // Optimiste
+    setNewMessage('');
+    // Ajout optimiste (message temporaire)
+    const tempMessage = {
+      _id: Date.now(),
+      text: messageText,
+      sender: { _id: user._id, name: user.name, avatar: user.avatar },
+      createdAt: new Date().toISOString(),
+      conversation: conversationId
+    };
+    setMessages(prev => [...prev, tempMessage]);
     try {
       if (socket) {
         socket.emit('sendMessage', { conversationId, text: messageText });
       } else {
         const { data } = await api.post('/messages', { conversationId, text: messageText });
-        setMessages(prev => [...prev, data]);
+        // Remplacer le message temporaire par le vrai (optionnel)
+        setMessages(prev => prev.map(m => m._id === tempMessage._id ? data : m));
       }
     } catch (error) {
       console.error('Erreur envoi message:', error);
-      // Réinsérer le message en cas d'erreur
+      // Retirer le message temporaire
+      setMessages(prev => prev.filter(m => m._id !== tempMessage._id));
       setNewMessage(messageText);
     } finally {
       setSending(false);
@@ -73,14 +85,14 @@ const Chat = () => {
 
   if (!conversation) return <div className="loading">Chargement...</div>;
 
-  const otherUser = conversation.participants.find(p => p._id !== user._id);
+  const otherUser = conversation.participants?.find(p => p._id !== user._id);
 
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <img 
-          src={otherUser?.avatar || '/default-avatar.png'} 
-          alt={otherUser?.name} 
+        <img
+          src={otherUser?.avatar || '/default-avatar.png'}
+          alt={otherUser?.name}
           className="chat-avatar"
           onError={(e) => e.target.src = '/default-avatar.png'}
         />
