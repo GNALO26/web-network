@@ -32,12 +32,14 @@ const ConversationsList = () => {
         const otherUser = conv.participants?.find(p => p._id !== user._id);
         return (
           <Link to={`/messages/${conv._id}`} key={conv._id} className="conversation-card">
-            <img 
-              src={otherUser?.avatar || '/default-avatar.png'} 
-              alt={otherUser?.name} 
-              onError={(e) => e.target.src = '/default-avatar.png'}
-            />
-            <div>
+            <div className="conv-avatar">
+              <img 
+                src={otherUser?.avatar || '/default-avatar.png'} 
+                alt={otherUser?.name} 
+                onError={(e) => e.target.src = '/default-avatar.png'}
+              />
+            </div>
+            <div className="conv-info">
               <h4>{otherUser?.name || 'Utilisateur'}</h4>
               <p className="last-message">{conv.lastMessage || 'Nouvelle conversation'}</p>
             </div>

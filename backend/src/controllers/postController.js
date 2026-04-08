@@ -49,12 +49,13 @@ const likePost = async (req, res) => {
       post.likes = post.likes.filter(id => id.toString() !== req.user._id.toString());
     } else {
       post.likes.push(req.user._id);
+      // Notification à l'auteur du post
       if (post.author.toString() !== req.user._id.toString()) {
         await Notification.create({
           recipient: post.author,
           sender: req.user._id,
           type: 'like',
-          referenceId: post._id
+          referenceId: post._id  // ← pour rediriger vers le post
         });
         const io = req.app.get('io');
         if (io) io.to(post.author.toString()).emit('notification', { type: 'like' });

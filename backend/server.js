@@ -31,7 +31,7 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   console.log(`✅ Socket connecté: ${socket.userId}`);
-  socket.join(socket.userId); // room personnelle
+  socket.join(socket.userId);
 
   socket.on('joinConversation', (conversationId) => {
     socket.join(conversationId);
@@ -45,6 +45,7 @@ io.on('connection', (socket) => {
       const { conversationId, text } = data;
       const conversation = await Conversation.findById(conversationId);
       if (!conversation || !conversation.participants.includes(socket.userId)) return;
+
       const message = await Message.create({
         conversation: conversationId,
         sender: socket.userId,
@@ -53,15 +54,16 @@ io.on('connection', (socket) => {
       conversation.lastMessage = text;
       conversation.lastMessageTime = Date.now();
       await conversation.save();
+
       const populatedMessage = await message.populate('sender', 'name avatar');
-      // Notifier l'autre participant
       const otherId = conversation.participants.find(p => p.toString() !== socket.userId.toString());
+
       if (otherId) {
         await Notification.create({
           recipient: otherId,
           sender: socket.userId,
           type: 'message',
-          referenceId: message._id
+          referenceId: conversationId  // ← important pour redirection
         });
         io.to(otherId.toString()).emit('newMessage', populatedMessage);
         io.to(otherId.toString()).emit('notification', { type: 'message' });

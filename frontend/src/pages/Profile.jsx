@@ -76,7 +76,7 @@ const handleAvatarUpload = async (e) => {
     setAvatarFile(null);
   } catch (error) {
     console.error('Upload error:', error.response?.data);
-    alert(error.response?.data?.message || 'Erreur lors de l\'upload');
+    alert(error.response?.data?.message || 'Erreur lors de l\'upload. Vérifiez que Cloudinary est configuré.');
   } finally {
     setUploading(false);
   }

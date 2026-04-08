@@ -9,6 +9,75 @@
   --border-radius: 12px;
   --box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+/* Conversations page */
+.conversations-container {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.conversation-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  color: #333;
+}
+
+.conversation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.conv-avatar {
+  flex-shrink: 0;
+}
+
+.conv-avatar img {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary);
+}
+
+.conv-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.conv-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 1.1rem;
+}
+
+.last-message {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 500px) {
+  .conv-avatar img {
+    width: 45px;
+    height: 45px;
+  }
+  .conv-info h4 {
+    font-size: 1rem;
+  }
+  .last-message {
+    font-size: 0.75rem;
+  }
+}
 /* Chat - gestion des images dans les messages (au cas où) */
 .message-text img {
   max-width: 100%;

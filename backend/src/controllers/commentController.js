@@ -13,19 +13,20 @@ const addComment = async (req, res) => {
       post: post._id
     });
     const populatedComment = await comment.populate('author', 'name avatar');
-    // Notification
+    // Notification à l'auteur du post
     if (post.author.toString() !== req.user._id.toString()) {
       await Notification.create({
         recipient: post.author,
         sender: req.user._id,
         type: 'comment',
-        referenceId: post._id
+        referenceId: post._id  // ← pour rediriger vers le post
       });
       const io = req.app.get('io');
-      if (io) io.to(post.author.toString()).emit('notification', {});
+      if (io) io.to(post.author.toString()).emit('notification', { type: 'comment' });
     }
     res.status(201).json(populatedComment);
   } catch (error) {
+    console.error('Erreur addComment:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
@@ -37,6 +38,7 @@ const getComments = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(comments);
   } catch (error) {
+    console.error('Erreur getComments:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
